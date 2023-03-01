@@ -8,7 +8,13 @@ import {
   Button,
 } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
-import React, { FC, ReactElement, useState } from 'react';
+import React, {
+  FC,
+  ReactElement,
+  useState,
+  useEffect,
+  useContext,
+} from 'react';
 import { sendApiRequest } from '../../helpers/sendApiRequest';
 import { ICreateTask } from '../taskarea/interfaces/ICreateTask';
 import { Priority } from './enums/Priority';
@@ -17,6 +23,7 @@ import TaskDateField from './TaskDateField';
 import TaskDescriptionField from './TaskDescriptionField';
 import TaskSelectField from './TaskSelectField';
 import TaskTitleField from './TaskTitleField';
+import { TaskUpdateContext } from '../../context';
 
 const TaskForm: FC = (): ReactElement => {
   const [title, setTitle] = useState<string | undefined>(undefined);
@@ -24,6 +31,9 @@ const TaskForm: FC = (): ReactElement => {
   const [date, setDate] = useState<Date | null>(new Date());
   const [status, setStatus] = useState<string>(Status.todo);
   const [priority, setPriority] = useState<string>(Priority.normal);
+  const [showSuccess, setShowSuccess] = useState<boolean>(false);
+
+  const tasksUpdatedContext = useContext(TaskUpdateContext);
 
   const createTaskMutation = useMutation({
     mutationFn: (data: ICreateTask) =>
@@ -44,6 +54,21 @@ const TaskForm: FC = (): ReactElement => {
     createTaskMutation.mutate(task);
   }
 
+  useEffect(() => {
+    if (createTaskMutation.isSuccess) {
+      setShowSuccess(true);
+      tasksUpdatedContext.toggle();
+    }
+
+    const successTimout = setTimeout(() => {
+      setShowSuccess(false);
+    }, 7000);
+
+    return () => {
+      clearTimeout(successTimout);
+    };
+  }, [createTaskMutation.isSuccess]);
+
   return (
     <Box
       display="flex"
@@ -53,10 +78,12 @@ const TaskForm: FC = (): ReactElement => {
       px={4}
       my={6}
     >
-      <Alert severity="success" sx={{ width: '100%', marginBottom: '16px' }}>
-        <AlertTitle>Success</AlertTitle>
-        The task has been created successfully
-      </Alert>
+      {showSuccess && (
+        <Alert severity="success" sx={{ width: '100%', marginBottom: '16px' }}>
+          <AlertTitle>Success</AlertTitle>
+          The task has been created successfully
+        </Alert>
+      )}
       <Typography mb={2} component="h2" variant="h6">
         Create A Task
       </Typography>
